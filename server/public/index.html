@@ -2,12 +2,1240 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Radar Simulation</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Système de Défense Radar - GALSEN DOME</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+      font-family: 'Courier New', monospace;
+      color: #00ff00;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px #ff0000;
+      font-size: 2.5em;
+      color: #ff0000;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #ffff00;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px #ffff00;
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.5; }
+    }
+
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid #ff0000;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+    }
+
+    .status-item {
+      text-align: center;
+      padding: 10px;
+      background: rgba(255, 0, 0, 0.1);
+      border-radius: 5px;
+    }
+
+    .status-item span:first-child {
+      display: block;
+      color: #888;
+      font-size: 0.9em;
+      text-transform: uppercase;
+    }
+
+    .status-item span:last-child {
+      display: block;
+      color: #00ff00;
+      font-weight: bold;
+      font-size: 1.2em;
+      text-shadow: 0 0 5px #00ff00;
+    }
+
+    .threat-level {
+      background: rgba(255, 0, 0, 0.2) !important;
+      border: 1px solid #ff0000;
+    }
+
+    .threat-level span:last-child {
+      color: #ff0000 !important;
+      animation: pulse-red 1.5s infinite;
+    }
+
+    @keyframes pulse-red {
+      0% { text-shadow: 0 0 5px #ff0000; }
+      50% { text-shadow: 0 0 20px #ff0000, 0 0 30px #ff0000; }
+      100% { text-shadow: 0 0 5px #ff0000; }
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .radar-column {
+      text-align: center;
+    }
+
+    .radar-column canvas {
+      background: radial-gradient(circle at center bottom, #001100 0%, #000000 70%);
+      border: 3px solid #ff0000;
+      border-radius: 15px;
+      box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+    }
+
+    .radar-info {
+      margin-top: 10px;
+      color: #ffff00;
+      font-size: 1em;
+      font-weight: bold;
+      text-shadow: 0 0 5px #ffff00;
+    }
+
+    .info-column {
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid #ff0000;
+      border-radius: 15px;
+      padding: 20px;
+      height: 450px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #ff0000;
+      padding-bottom: 10px;
+    }
+
+    .info-header h3 {
+      margin: 0;
+      color: #ff0000;
+      text-transform: uppercase;
+      font-size: 1.1em;
+    }
+
+    #clear-detections {
+      background: #ff3300;
+      border: none;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      transition: all 0.3s;
+    }
+
+    #clear-detections:hover {
+      background: #ff5500;
+      box-shadow: 0 0 10px #ff5500;
+    }
+
+    #detection-list {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      max-height: 250px;
+    }
+
+    .detection-item {
+      background: rgba(255, 0, 0, 0.1);
+      border-left: 4px solid #ff0000;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 5px;
+      font-size: 0.95em;
+    }
+
+    .detection-item.recent {
+      background: rgba(255, 255, 0, 0.2);
+      border-left-color: #ffff00;
+      animation: pulse-yellow 1s ease-in-out;
+    }
+
+    @keyframes pulse-yellow {
+      0% { background: rgba(255, 255, 0, 0.4); }
+      100% { background: rgba(255, 255, 0, 0.1); }
+    }
+
+    .live-data {
+      border-top: 2px solid #ff0000;
+      padding-top: 15px;
+    }
+
+    .live-data h4 {
+      margin: 0 0 15px 0;
+      color: #ff0000;
+      text-transform: uppercase;
+    }
+
+    .live-data div {
+      margin: 8px 0;
+      font-family: monospace;
+      font-size: 1em;
+    }
+
+    #live-angle, #live-distance {
+      color: #ffff00;
+      font-weight: bold;
+      text-shadow: 0 0 5px #ffff00;
+    }
+
+    #last-update {
+      color: #888;
+      font-size: 0.9em;
+    }
+
+    /* SYSTÈME DE BOUTONS MILITAIRES */
+    .military-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .control-section {
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid #ff0000;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
+    }
+
+    .control-section h3 {
+      color: #ff0000;
+      text-transform: uppercase;
+      font-size: 1.1em;
+      margin: 0 0 15px 0;
+      text-align: center;
+      border-bottom: 1px solid #ff0000;
+      padding-bottom: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .military-btn {
+      padding: 15px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Boutons d'attaque */
+    .btn-launch {
+      border-color: #ff0000;
+      background: linear-gradient(45deg, #330000, #660000);
+    }
+
+    .btn-launch:hover {
+      background: #ff0000;
+      color: #000;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+      transform: scale(1.05);
+    }
+
+    .btn-launch.active {
+      background: #ff0000;
+      animation: launch-pulse 0.5s infinite;
+    }
+
+    @keyframes launch-pulse {
+      0% { box-shadow: 0 0 20px #ff0000; }
+      50% { box-shadow: 0 0 40px #ff0000, 0 0 60px #ff0000; }
+      100% { box-shadow: 0 0 20px #ff0000; }
+    }
+
+    /* Boutons de défense */
+    .btn-defense {
+      border-color: #00ff00;
+      background: linear-gradient(45deg, #003300, #006600);
+    }
+
+    .btn-defense:hover {
+      background: #00ff00;
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+      transform: scale(1.05);
+    }
+
+    .btn-defense.active {
+      background: #00ff00;
+      color: #000;
+      animation: defense-pulse 1s infinite;
+    }
+
+    @keyframes defense-pulse {
+      0% { box-shadow: 0 0 15px #00ff00; }
+      50% { box-shadow: 0 0 30px #00ff00, 0 0 45px #00ff00; }
+      100% { box-shadow: 0 0 15px #00ff00; }
+    }
+
+    /* Boutons d'alerte */
+    .btn-alert {
+      border-color: #ffff00;
+      background: linear-gradient(45deg, #333300, #666600);
+    }
+
+    .btn-alert:hover {
+      background: #ffff00;
+      color: #000;
+      box-shadow: 0 0 20px rgba(255, 255, 0, 0.8);
+      transform: scale(1.05);
+    }
+
+    .btn-alert.active {
+      background: #ffff00;
+      color: #000;
+      animation: alert-pulse 0.3s infinite;
+    }
+
+    @keyframes alert-pulse {
+      0% { box-shadow: 0 0 25px #ffff00; }
+      50% { box-shadow: 0 0 50px #ffff00, 0 0 75px #ffff00; }
+      100% { box-shadow: 0 0 25px #ffff00; }
+    }
+
+    /* Boutons de configuration */
+    .btn-config {
+      border-color: #0088ff;
+      background: linear-gradient(45deg, #001133, #002266);
+    }
+
+    .btn-config:hover {
+      background: #0088ff;
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 136, 255, 0.8);
+      transform: scale(1.05);
+    }
+
+    /* États des systèmes */
+    .system-status {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .status-indicator {
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .status-indicator.online {
+      border-color: #00ff00;
+      background: rgba(0, 255, 0, 0.1);
+    }
+
+    .status-indicator.offline {
+      border-color: #ff0000;
+      background: rgba(255, 0, 0, 0.1);
+    }
+
+    .status-indicator.warning {
+      border-color: #ffff00;
+      background: rgba(255, 255, 0, 0.1);
+    }
+
+    /* Alerte d'urgence */
+    .emergency-alert {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #ff0000;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      font-size: 1.5em;
+      font-weight: bold;
+      text-transform: uppercase;
+      z-index: 1000;
+      animation: emergency-blink 0.5s infinite;
+      display: none;
+    }
+
+    .emergency-alert.active {
+      display: block;
+    }
+
+    @keyframes emergency-blink {
+      0% { background: #ff0000; }
+      50% { background: #990000; }
+      100% { background: #ff0000; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+      
+      .military-controls {
+        grid-template-columns: 1fr;
+      }
+      
+      .radar-column canvas {
+        width: 100%;
+        height: auto;
+      }
+    }
+  </style>
 </head>
 <body>
-  <canvas id="radarCanvas" width="400" height="400"></canvas>
-  <pre id="info" style="color: lime; font-size: 16px; margin-top: 10px;"></pre>
-  <script src="script.js"></script>
+  <div class="emergency-alert" id="emergency-alert">
+    🚨 ALERTE IMMINENTE - MENACE DÉTECTÉE - TOUS AUX POSTES DE COMBAT 🚨
+  </div>
+
+  <div class="container">
+    <h1>🛡️ GALSEN DOME DEFENSE 🛡️</h1>
+    <div class="subtitle">SYSTÈME DE DÉFENSE ANTIMISSILE - OPÉRATIONNEL</div>
+    
+    <div class="status-bar">
+      <div class="status-item">
+        <span>État du Système:</span>
+        <span id="connection-status">Déconnecté</span>
+      </div>
+      <div class="status-item">
+        <span>Secteur Couvert:</span>
+        <span id="current-angle">0°</span>
+      </div>
+      <div class="status-item">
+        <span>Menaces Détectées:</span>
+        <span id="detection-count">0</span>
+      </div>
+      <div class="status-item threat-level">
+        <span>Niveau de Menace:</span>
+        <span id="threat-level">FAIBLE</span>
+      </div>
+      <div class="status-item">
+        <span>Missiles Disponibles:</span>
+        <span id="missile-count">12</span>
+      </div>
+    </div>
+
+    <!-- États des systèmes -->
+    <div class="system-status">
+      <div class="status-indicator online" id="radar-status">
+        <div>📡 RADAR</div>
+        <div style="color: #00ff00;">OPÉRATIONNEL</div>
+      </div>
+      <div class="status-indicator offline" id="missile-status">
+        <div>🚀 MISSILES</div>
+        <div style="color: #ff0000;">STANDBY</div>
+      </div>
+      <div class="status-indicator offline" id="defense-status">
+        <div>🛡️ DÉFENSE AUTO</div>
+        <div style="color: #ff0000;">DÉSACTIVÉE</div>
+      </div>
+      <div class="status-indicator online" id="alert-status">
+        <div>⚠️ ALERTES</div>
+        <div style="color: #00ff00;">ACTIVES</div>
+      </div>
+    </div>
+
+    <div class="grid-layout">
+      <div class="radar-column">
+        <canvas id="radarCanvas" width="500" height="300"></canvas>
+        <div class="radar-info">
+          <p>🎯 PORTÉE: 200cm | COUVERTURE: 0-180° | PRÉCISION: ±1°</p>
+        </div>
+      </div>
+      
+      <div class="info-column">
+        <div class="info-header">
+          <h3>🎯 Menaces Détectées</h3>
+          <button id="clear-detections">Effacer Historique</button>
+        </div>
+        <div id="detection-list"></div>
+        <div class="live-data">
+          <h4>📊 Données Temps Réel</h4>
+          <div id="live-angle">Angle: --°</div>
+          <div id="live-distance">Distance: -- cm</div>
+          <div id="last-update">Dernière MAJ: --</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTRÔLES MILITAIRES -->
+    <div class="military-controls">
+      <!-- Section Attaque -->
+      <div class="control-section">
+        <h3>🚀 Système d'Attaque</h3>
+        <div class="btn-group">
+          <button class="military-btn btn-launch" id="btn-launch-missiles">
+            🚀 Lancer Missiles
+          </button>
+          <button class="military-btn btn-launch" id="btn-target-lock">
+            🎯 Verrouillage Cible
+          </button>
+          <button class="military-btn btn-launch" id="btn-fire-control">
+            💥 Contrôle de Tir
+          </button>
+        </div>
+      </div>
+
+      <!-- Section Défense -->
+      <div class="control-section">
+        <h3>🛡️ Défense Automatique</h3>
+        <div class="btn-group">
+          <button class="military-btn btn-defense" id="btn-auto-defense">
+            🛡️ Défense Automatique
+          </button>
+          <button class="military-btn btn-defense" id="btn-interception">
+            ⚡ Mode Interception
+          </button>
+          <button class="military-btn btn-defense" id="btn-shield-mode">
+            🔰 Bouclier Énergétique
+          </button>
+        </div>
+      </div>
+
+      <!-- Section Alertes -->
+      <div class="control-section">
+        <h3>⚠️ Système d'Alerte</h3>
+        <div class="btn-group">
+          <button class="military-btn btn-alert" id="btn-imminent-alert">
+            🚨 Alerte Imminente
+          </button>
+          <button class="military-btn btn-alert" id="btn-war-mode">
+            ⚔️ Mode Guerre
+          </button>
+          <button class="military-btn btn-alert" id="btn-evacuation">
+            🏃 Évacuation d'Urgence
+          </button>
+        </div>
+      </div>
+
+      <!-- Section Configuration -->
+      <div class="control-section">
+        <h3>⚙️ Configuration</h3>
+        <div class="btn-group">
+          <button class="military-btn btn-config" id="btn-settings">
+            ⚙️ Paramètres Système
+          </button>
+          <button class="military-btn btn-config" id="btn-calibration">
+            🔧 Calibrage Radar
+          </button>
+          <button class="military-btn btn-config" id="btn-diagnostics">
+            📊 Diagnostics
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    class RadarSystem {
+      constructor() {
+        this.canvas = document.getElementById("radarCanvas");
+        this.ctx = this.canvas.getContext("2d");
+        
+        // Configuration radar
+        this.centerX = this.canvas.width / 2;
+        this.centerY = this.canvas.height - 20;
+        this.maxRadius = 180;
+        this.sweepMin = 0;
+        this.sweepMax = 180;
+        
+        // État du système
+        this.currentAngle = 0;
+        this.currentDetections = [];
+        this.allDetections = [];
+        this.isPaused = false;
+        this.isWarMode = false;
+        this.autoDefenseActive = false;
+        this.missileCount = 12;
+        this.threatLevel = "FAIBLE";
+        
+        // Éléments DOM
+        this.elements = {
+          connectionStatus: document.getElementById("connection-status"),
+          currentAngle: document.getElementById("current-angle"),
+          detectionCount: document.getElementById("detection-count"),
+          detectionList: document.getElementById("detection-list"),
+          liveAngle: document.getElementById("live-angle"),
+          liveDistance: document.getElementById("live-distance"),
+          lastUpdate: document.getElementById("last-update"),
+          threatLevel: document.getElementById("threat-level"),
+          missileCount: document.getElementById("missile-count"),
+          emergencyAlert: document.getElementById("emergency-alert")
+        };
+        
+        this.initializeEventListeners();
+        this.startRadarLoop();
+        this.startDataFetching();
+      }
+
+      initializeEventListeners() {
+        // Boutons d'attaque
+        document.getElementById("btn-launch-missiles").addEventListener("click", () => {
+          this.launchMissiles();
+        });
+
+        document.getElementById("btn-target-lock").addEventListener("click", () => {
+          this.toggleTargetLock();
+        });
+
+        document.getElementById("btn-fire-control").addEventListener("click", () => {
+          this.toggleFireControl();
+        });
+
+        // Boutons de défense
+        document.getElementById("btn-auto-defense").addEventListener("click", () => {
+          this.toggleAutoDefense();
+        });
+
+        document.getElementById("btn-interception").addEventListener("click", () => {
+          this.toggleInterceptionMode();
+        });
+
+        document.getElementById("btn-shield-mode").addEventListener("click", () => {
+          this.toggleShieldMode();
+        });
+
+        // Boutons d'alerte
+        document.getElementById("btn-imminent-alert").addEventListener("click", () => {
+          this.toggleImminentAlert();
+        });
+
+        document.getElementById("btn-war-mode").addEventListener("click", () => {
+          this.toggleWarMode();
+        });
+
+        document.getElementById("btn-evacuation").addEventListener("click", () => {
+          this.triggerEvacuation();
+        });
+
+        // Boutons de configuration
+        document.getElementById("btn-settings").addEventListener("click", () => {
+          this.openSettings();
+        });
+
+        document.getElementById("btn-calibration").addEventListener("click", () => {
+          this.startCalibration();
+        });
+
+        document.getElementById("btn-diagnostics").addEventListener("click", () => {
+          this.runDiagnostics();
+        });
+
+        // Bouton effacer
+        document.getElementById("clear-detections").addEventListener("click", () => {
+          this.allDetections = [];
+          this.updateDetectionList();
+          this.updateDetectionCount();
+        });
+      }
+
+      // Fonctions d'attaque
+      launchMissiles() {
+        if (this.missileCount > 0) {
+          const btn = document.getElementById("btn-launch-missiles");
+          btn.classList.add("active");
+          
+          // Simulation de lancement
+          setTimeout(() => {
+            this.missileCount--;
+            this.updateMissileCount();
+            btn.classList.remove("active");
+            this.logAction("🚀 MISSILE LANCÉ - Cible en cours d'engagement");
+          }, 2000);
+          
+          this.logAction("🎯 LANCEMENT DE MISSILE INITIÉ...");
+        } else {
+          alert("❌ PLUS DE MISSILES DISPONIBLES!");
+        }
+      }
+
+      toggleTargetLock() {
+        const btn = document.getElementById("btn-target-lock");
+        btn.classList.toggle("active");
+        
+        if (btn.classList.contains("active")) {
+          this.logAction("🎯 VERROUILLAGE CIBLE ACTIVÉ");
+        } else {
+          this.logAction("🎯 VERROUILLAGE CIBLE DÉSACTIVÉ");
+        }
+      }
+
+      toggleFireControl() {
+        const btn = document.getElementById("btn-fire-control");
+        btn.classList.toggle("active");
+        
+        if (btn.classList.contains("active")) {
+          this.logAction("💥 CONTRÔLE DE TIR ACTIVÉ");
+        } else {
+          this.logAction("💥 CONTRÔLE DE TIR DÉSACTIVÉ");
+        }
+      }
+
+      // Fonctions de défense
+      toggleAutoDefense() {
+        const btn = document.getElementById("btn-auto-defense");
+        const status = document.getElementById("defense-status");
+        
+        this.autoDefenseActive = !this.autoDefenseActive;
+        btn.classList.toggle("active");
+        
+        if (this.autoDefenseActive) {
+          status.className = "status-indicator online";
+          status.innerHTML = '<div>🛡️ DÉFENSE AUTO</div><div style="color: #00ff00;">ACTIVÉE</div>';
+          this.logAction("🛡️ DÉFENSE AUTOMATIQUE ACTIVÉE");
+        } else {
+          status.className = "status-indicator offline";
+          status.innerHTML = '<div>🛡️ DÉFENSE AUTO</div><div style="color: #ff0000;">DÉSACTIVÉE</div>';
+          this.logAction("🛡️ DÉFENSE AUTOMATIQUE DÉSACTIVÉE");
+        }
+      }
+
+      toggleInterceptionMode() {
+        const btn = document.getElementById("btn-interception");
+        btn.classList.toggle("active");
+        
+        if (btn.classList.contains("active")) {
+          this.logAction("⚡ MODE INTERCEPTION ACTIVÉ");
+        } else {
+          this.logAction("⚡ MODE INTERCEPTION DÉSACTIVÉ");
+        }
+      }
+
+      toggleShieldMode() {
+        const btn = document.getElementById("btn-shield-mode");
+        btn.classList.toggle("active");
+        
+        if (btn.classList.contains("active")) {
+          this.logAction("🔰 BOUCLIER ÉNERGÉTIQUE ACTIVÉ");
+        } else {
+          this.logAction("🔰 BOUCLIER ÉNERGÉTIQUE DÉSACTIVÉ");
+        }
+      }
+
+      // Fonctions d'alerte
+      toggleImminentAlert() {
+        const btn = document.getElementById("btn-imminent-alert");
+        const alert = this.elements.emergencyAlert;
+        
+        btn.classList.toggle("active");
+        alert.classList.toggle("active");
+        
+        if (btn.classList.contains("active")) {
+          this.logAction("🚨 ALERTE IMMINENTE ACTIVÉE");
+          this.threatLevel = "CRITIQUE";
+        } else {
+          this.logAction("🚨 ALERTE IMMINENTE DÉSACTIVÉE");
+          this.threatLevel = "ÉLEVÉ";
+        }
+        
+        this.updateThreatLevel();
+      }
+
+      toggleWarMode() {
+        const btn = document.getElementById("btn-war-mode");
+        this.isWarMode = !this.isWarMode;
+        btn.classList.toggle("active");
+        
+        if (this.isWarMode) {
+          this.logAction("⚔️ MODE GUERRE ACTIVÉ - TOUS SYSTÈMES EN ALERTE");
+          this.threatLevel = "MAXIMUM";
+          document.body.style.background = "linear-gradient(135deg, #1a0000 0%, #330000 100%)";
+        } else {
+          this.logAction("⚔️ MODE GUERRE DÉSACTIVÉ");
+          this.threatLevel = "NORMAL";
+          document.body.style.background = "linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)";
+        }
+        
+        this.updateThreatLevel();
+      }
+
+      triggerEvacuation() {
+        const btn = document.getElementById("btn-evacuation");
+        btn.classList.add("active");
+        
+        setTimeout(() => {
+          btn.classList.remove("active");
+        }, 5000);
+        
+        this.logAction("🏃 PROCÉDURE D'ÉVACUATION D'URGENCE INITIÉE");
+        alert("🚨 ÉVACUATION D'URGENCE DÉCLENCHÉE!\n\nTous les civils doivent se diriger vers les abris les plus proches.\nLes forces armées maintiennent leurs positions.");
+      }
+
+      // Fonctions de configuration
+      openSettings() {
+        this.logAction("⚙️ OUVERTURE DU PANNEAU DE CONFIGURATION");
+        alert("⚙️ PARAMÈTRES SYSTÈME\n\n- Sensibilité radar: 85%\n- Portée maximale: 200cm\n- Angle de balayage: 0-180°\n- Fréquence de mise à jour: 50ms\n- Mode de défense: Manuel\n- Niveau d'alerte: " + this.threatLevel);
+      }
+
+      startCalibration() {
+        const btn = document.getElementById("btn-calibration");
+        btn.classList.add("active");
+        
+        this.logAction("🔧 CALIBRAGE RADAR EN COURS...");
+        
+        setTimeout(() => {
+          btn.classList.remove("active");
+          this.logAction("✅ CALIBRAGE RADAR TERMINÉ - PRÉCISION OPTIMALE");
+        }, 3000);
+      }
+
+      runDiagnostics() {
+        const btn = document.getElementById("btn-diagnostics");
+        btn.classList.add("active");
+        
+        this.logAction("📊 DIAGNOSTIC SYSTÈME EN COURS...");
+        
+        setTimeout(() => {
+          btn.classList.remove("active");
+          this.logAction("✅ DIAGNOSTIC TERMINÉ - TOUS SYSTÈMES OPÉRATIONNELS");
+          alert("📊 RAPPORT DE DIAGNOSTIC\n\n✅ Radar: OPÉRATIONNEL\n✅ Système de tir: PRÊT\n✅ Communications: STABLES\n✅ Alimentation: 98%\n⚠️ Missiles restants: " + this.missileCount + "/12");
+        }, 3000);
+      }
+
+      // Fonctions utilitaires
+      logAction(message) {
+        console.log(`[${new Date().toLocaleTimeString()}] ${message}`);
+        
+        // Ajouter à la liste des détections comme log d'action
+        const actionLog = {
+          angle: this.currentAngle,
+          distance: 0,
+          timestamp: Date.now(),
+          id: `action-${Date.now()}`,
+          isAction: true,
+          message: message
+        };
+        
+        this.allDetections.unshift(actionLog);
+        this.updateDetectionList();
+      }
+
+      updateThreatLevel() {
+        this.elements.threatLevel.textContent = this.threatLevel;
+        
+        // Changer la couleur selon le niveau
+        const statusItem = this.elements.threatLevel.parentElement;
+        statusItem.className = "status-item threat-level";
+        
+        switch(this.threatLevel) {
+          case "FAIBLE":
+            this.elements.threatLevel.style.color = "#00ff00";
+            break;
+          case "NORMAL":
+            this.elements.threatLevel.style.color = "#ffff00";
+            break;
+          case "ÉLEVÉ":
+            this.elements.threatLevel.style.color = "#ff8800";
+            break;
+          case "CRITIQUE":
+            this.elements.threatLevel.style.color = "#ff0000";
+            break;
+          case "MAXIMUM":
+            this.elements.threatLevel.style.color = "#ff0000";
+            this.elements.threatLevel.style.animation = "pulse-red 0.5s infinite";
+            break;
+        }
+      }
+
+      updateMissileCount() {
+        this.elements.missileCount.textContent = this.missileCount;
+        
+        if (this.missileCount <= 3) {
+          this.elements.missileCount.style.color = "#ff0000";
+          this.elements.missileCount.style.animation = "pulse-red 1s infinite";
+        } else if (this.missileCount <= 6) {
+          this.elements.missileCount.style.color = "#ffff00";
+        } else {
+          this.elements.missileCount.style.color = "#00ff00";
+        }
+      }
+
+      polarToCartesian(angle, distance) {
+        const rad = (180 - angle) * Math.PI / 180;
+        const normalizedDistance = Math.min(distance * 2, this.maxRadius);
+        const x = this.centerX + normalizedDistance * Math.cos(rad);
+        const y = this.centerY - normalizedDistance * Math.sin(rad);
+        return { x, y };
+      }
+
+      drawRadar() {
+        // Effacer le canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Couleur de base selon le mode
+        const baseColor = this.isWarMode ? "#330000" : "#003300";
+        const gridColor = this.isWarMode ? "#660000" : "#006600";
+
+        // Dessiner les cercles de distance
+        this.ctx.strokeStyle = gridColor;
+        this.ctx.lineWidth = 1;
+        for (let r = 40; r <= this.maxRadius; r += 40) {
+          this.ctx.beginPath();
+          this.ctx.arc(this.centerX, this.centerY, r, Math.PI, 0, false);
+          this.ctx.stroke();
+          
+          // Étiquettes de distance
+          this.ctx.fillStyle = this.isWarMode ? "#ff6666" : "#006600";
+          this.ctx.font = "10px monospace";
+          this.ctx.fillText(`${r/2}cm`, this.centerX + r - 15, this.centerY - 5);
+        }
+
+        // Dessiner les lignes radiales
+        this.ctx.strokeStyle = gridColor;
+        for (let angle = this.sweepMin; angle <= this.sweepMax; angle += 30) {
+          const rad = (180 - angle) * Math.PI / 180;
+          const x = this.centerX + this.maxRadius * Math.cos(rad);
+          const y = this.centerY - this.maxRadius * Math.sin(rad);
+          
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.centerX, this.centerY);
+          this.ctx.lineTo(x, y);
+          this.ctx.stroke();
+          
+          // Étiquettes d'angle
+          this.ctx.fillStyle = this.isWarMode ? "#ff6666" : "#006600";
+          this.ctx.font = "10px monospace";
+          const labelX = this.centerX + (this.maxRadius + 15) * Math.cos(rad);
+          const labelY = this.centerY - (this.maxRadius + 15) * Math.sin(rad);
+          this.ctx.fillText(`${angle}°`, labelX - 10, labelY + 5);
+        }
+
+        // Dessiner l'aiguille du radar (balayage)
+        if (!this.isPaused) {
+          const sweepRad = (180 - this.currentAngle) * Math.PI / 180;
+          const sweepX = this.centerX + this.maxRadius * Math.cos(sweepRad);
+          const sweepY = this.centerY - this.maxRadius * Math.sin(sweepRad);
+          
+          // Ligne de balayage principale
+          this.ctx.strokeStyle = this.isWarMode ? "#ff0000" : "#00ff00";
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.centerX, this.centerY);
+          this.ctx.lineTo(sweepX, sweepY);
+          this.ctx.stroke();
+
+          // Effet de traînée
+          this.ctx.strokeStyle = this.isWarMode ? "rgba(255, 0, 0, 0.3)" : "rgba(0, 255, 0, 0.3)";
+          this.ctx.lineWidth = 12;
+          this.ctx.stroke();
+        }
+
+        // Dessiner les détections
+        this.drawDetections();
+      }
+
+      drawDetections() {
+        const now = Date.now();
+        const currentObjectDetections = this.currentDetections.filter(d => d.distance > 0);
+        
+        currentObjectDetections.forEach((detection, index) => {
+          if (detection.distance > 0 && detection.distance <= 200) {
+            const { x, y } = this.polarToCartesian(detection.angle, detection.distance);
+            
+            if (x >= 0 && x <= this.canvas.width && y >= 0 && y <= this.canvas.height) {
+              // Couleur selon la distance et le mode
+              let color = "#ff0000"; // Rouge pour menace proche
+              if (detection.distance > 15) color = "#ff8800"; // Orange 
+              if (detection.distance > 30) color = "#ffff00"; // Jaune
+              if (detection.distance > 50) color = "#00ff00"; // Vert pour loin
+              
+              // En mode guerre, tout est considéré comme menace
+              if (this.isWarMode && detection.distance <= 50) {
+                color = "#ff0000";
+              }
+              
+              // Point principal
+              this.ctx.fillStyle = color;
+              this.ctx.beginPath();
+              this.ctx.arc(x, y, 10, 0, 2 * Math.PI);
+              this.ctx.fill();
+              
+              // Contour blanc
+              this.ctx.strokeStyle = "#ffffff";
+              this.ctx.lineWidth = 2;
+              this.ctx.stroke();
+              
+              // Effet de pulsation
+              this.ctx.strokeStyle = color;
+              this.ctx.lineWidth = 4;
+              this.ctx.beginPath();
+              const pulseRadius = 15 + Math.sin(now / 150) * 5;
+              this.ctx.arc(x, y, pulseRadius, 0, 2 * Math.PI);
+              this.ctx.stroke();
+              
+              // Étiquettes
+              this.ctx.fillStyle = "#ffffff";
+              this.ctx.font = "bold 12px monospace";
+              this.ctx.strokeStyle = "#000000";
+              this.ctx.lineWidth = 3;
+              
+              const label1 = `${detection.distance}cm`;
+              const label2 = `${detection.angle}°`;
+              const label3 = this.isWarMode ? "MENACE" : "CIBLE";
+              
+              // Fond noir pour les étiquettes
+              this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+              this.ctx.fillRect(x + 15, y - 25, 80, 45);
+              
+              // Texte blanc
+              this.ctx.fillStyle = "#ffffff";
+              this.ctx.fillText(label1, x + 18, y - 10);
+              this.ctx.fillText(label2, x + 18, y + 5);
+              
+              this.ctx.fillStyle = color;
+              this.ctx.fillText(label3, x + 18, y + 18);
+              
+              // Auto-défense : simulation d'interception
+              if (this.autoDefenseActive && detection.distance <= 30) {
+                this.simulateInterception(x, y);
+              }
+            }
+          }
+        });
+      }
+
+      simulateInterception(x, y) {
+        const now = Date.now();
+        
+        // Dessiner ligne d'interception
+        this.ctx.strokeStyle = "#00ffff";
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.centerX, this.centerY);
+        this.ctx.lineTo(x, y);
+        this.ctx.stroke();
+        
+        // Effet d'explosion
+        const explosionRadius = 20 + Math.sin(now / 100) * 10;
+        this.ctx.strokeStyle = "#ffff00";
+        this.ctx.lineWidth = 6;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, explosionRadius, 0, 2 * Math.PI);
+        this.ctx.stroke();
+      }
+
+      async fetchDataFromServer() {
+        if (this.isPaused) return;
+        
+        try {
+          const response = await fetch("http://localhost:3000/data", {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-cache'
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          if (data && data.length > 0) {
+            const latestData = data[data.length - 1];
+            this.currentAngle = latestData.angle;
+            
+            const validDetections = data
+              .filter(d => d.distance >= 0 && d.distance <= 200)
+              .map(d => ({
+                ...d,
+                timestamp: d.timestamp || Date.now(),
+                id: d.id || `${d.angle}-${d.distance}-${Date.now()}`
+              }));
+            
+            this.currentDetections = validDetections;
+            
+            // Déterminer le niveau de menace
+            const threats = validDetections.filter(d => d.distance > 0 && d.distance <= 50);
+            if (threats.length > 5) {
+              this.threatLevel = "CRITIQUE";
+            } else if (threats.length > 2) {
+              this.threatLevel = "ÉLEVÉ";
+            } else if (threats.length > 0) {
+              this.threatLevel = "NORMAL";
+            } else {
+              this.threatLevel = "FAIBLE";
+            }
+            
+            // Auto-défense
+            if (this.autoDefenseActive && threats.length > 0) {
+              threats.forEach(threat => {
+                if (threat.distance <= 25 && this.missileCount > 0) {
+                  this.logAction(`🎯 INTERCEPTION AUTO: Cible à ${threat.distance}cm, angle ${threat.angle}°`);
+                  // Simulation de consommation de missile
+                  if (Math.random() < 0.1) { // 10% de chance de tirer
+                    this.missileCount--;
+                    this.updateMissileCount();
+                  }
+                }
+              });
+            }
+            
+            const objectDetections = validDetections.filter(d => d.distance > 0);
+            objectDetections.forEach(detection => {
+              const exists = this.allDetections.some(d => 
+                !d.isAction &&
+                d.angle === detection.angle && 
+                d.distance === detection.distance && 
+                Math.abs(d.timestamp - detection.timestamp) < 1000
+              );
+              
+              if (!exists) {
+                this.allDetections.unshift(detection);
+              }
+            });
+            
+            if (this.allDetections.length > 100) {
+              this.allDetections = this.allDetections.slice(0, 100);
+            }
+            
+            this.updateLiveData(latestData);
+            this.updateDetectionList();
+            this.updateDetectionCount();
+            this.updateThreatLevel();
+            this.updateConnectionStatus("OPÉRATIONNEL", "connected");
+            
+          }
+        } catch (error) {
+          console.error("❌ Erreur de communication:", error);
+          this.updateConnectionStatus("PERTE DE SIGNAL", "disconnected");
+        }
+      }
+
+      updateLiveData(data) {
+        this.elements.liveAngle.textContent = `Secteur: ${data.angle}°`;
+        this.elements.liveDistance.textContent = `Distance: ${data.distance > 0 ? data.distance + ' cm' : 'Zone libre'}`;
+        this.elements.lastUpdate.textContent = `Dernière MAJ: ${new Date().toLocaleTimeString()}`;
+        this.elements.currentAngle.textContent = `${data.angle}°`;
+      }
+
+      updateDetectionList() {
+        const listElement = this.elements.detectionList;
+        listElement.innerHTML = "";
+        
+        const recentData = this.allDetections.slice(0, 8);
+        
+        recentData.forEach((item, index) => {
+          const element = document.createElement("div");
+          element.className = "detection-item";
+          
+          if (Date.now() - item.timestamp < 3000) {
+            element.classList.add("recent");
+          }
+          
+          const timeStr = new Date(item.timestamp).toLocaleTimeString();
+          
+          if (item.isAction) {
+            element.innerHTML = `
+              <strong>⚡ ACTION SYSTÈME</strong><br>
+              ${item.message}<br>
+              <small>Heure: ${timeStr}</small>
+            `;
+            element.style.borderLeftColor = "#00ffff";
+            element.style.background = "rgba(0, 255, 255, 0.1)";
+          } else {
+            const threatIcon = item.distance <= 25 ? "🚨" : item.distance <= 50 ? "⚠️" : "👁️";
+            const threatText = item.distance <= 25 ? "MENACE CRITIQUE" : item.distance <= 50 ? "MENACE POTENTIELLE" : "SURVEILLANCE";
+            
+            element.innerHTML = `
+              <strong>${threatIcon} ${threatText}</strong><br>
+              Secteur: ${item.angle}° | Distance: ${item.distance}cm<br>
+              <small>Détecté: ${timeStr}</small>
+            `;
+          }
+          
+          listElement.appendChild(element);
+        });
+      }
+
+      updateDetectionCount() {
+        const threatCount = this.allDetections.filter(d => !d.isAction && d.distance > 0).length;
+        this.elements.detectionCount.textContent = threatCount;
+      }
+
+      updateConnectionStatus(status, type) {
+        this.elements.connectionStatus.textContent = status;
+        this.elements.connectionStatus.className = type;
+      }
+
+      startRadarLoop() {
+        const animate = () => {
+          this.drawRadar();
+          requestAnimationFrame(animate);
+        };
+        animate();
+      }
+
+      startDataFetching() {
+        setInterval(() => {
+          this.fetchDataFromServer();
+        }, 50);
+        
+        this.fetchDataFromServer();
+      }
+    }
+
+    // Initialiser le système
+    document.addEventListener("DOMContentLoaded", () => {
+      new RadarSystem();
+      
+      // Simulation de données pour demo (à retirer en production)
+      setInterval(() => {
+        if (Math.random() < 0.1) { // 10% de chance
+          console.log("Simulation de données de test");
+        }
+      }, 2000);
+    });
+  </script>
 </body>
 </html>
